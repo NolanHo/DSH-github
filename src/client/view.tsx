@@ -129,12 +129,12 @@ function ThreadRow(props: {
   const verdict = thread.type === 'PullRequest' ? reviewVerdict(thread.title) : undefined
   const pr = threadNumber(thread.url)
   return (
-    <div className="dgh-thread">
+    <div className={cx('dgh-thread', 'dgh-cat-' + category)}>
       <button className="dgh-row" onClick={props.onToggle}>
         <span className={cx('dgh-dot', thread.unread && 'dgh-dotUnread')} />
         <span className="dgh-rowTitle">{thread.title}</span>
         <span className="dgh-rowMeta">
-          <span className="dgh-tag">{t(TAG_LABELS[category])}</span>
+          <span className={cx('dgh-tag', 'dgh-tag-' + category)}>{t(TAG_LABELS[category])}</span>
           {verdict !== undefined && (
             <span className={cx('dgh-verdict', verdict === 'approved' ? 'dgh-verdictOk' : 'dgh-verdictBad')}>
               {t(verdict === 'approved' ? 'githubVerdictApproved' : 'githubVerdictChanges')}
