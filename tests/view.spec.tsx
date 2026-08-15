@@ -158,6 +158,65 @@ describe('InboxView detail race and gating', () => {
     store.dispose()
   })
 
+  it('hides the merge confirm while mergeable is unknown or the PR is not open', async () => {
+    const { service, ctx } = makeFakeService()
+    const configured: GithubStateResult = {
+      configured: true,
+      ghAvailable: true,
+      allowMerge: true,
+      threads: [thread('1')],
+      pollIntervalSec: 60,
+    }
+    const store = createGithubInboxStore({ githubState: vi.fn().mockResolvedValue(configured) }, service)
+    await store.refresh()
+    const pending: ((value: Response) => void)[] = []
+    vi.stubGlobal('fetch', vi.fn(() => new Promise<Response>(resolve => { pending.push(resolve) })))
+    const mounted = mount(createElement(InboxView, { store, ctx, scope: { sessionId: 's1' } }))
+    const rows = [...mounted.container.querySelectorAll('button')].filter(button => button.textContent?.includes('PR title needs review'))
+    await act(async () => { rows[0]!.click() })
+    await act(async () => {})
+    const mergeButton = [...mounted.container.querySelectorAll('button')].find(button => button.textContent === 'Merge')
+    await act(async () => { mergeButton!.click() })
+    // mergeable: null → no confirm button, unavailable line instead.
+    await act(async () => {
+      pending[1]!(new Response(JSON.stringify({ ok: true, value: { checks: [], mergeable: null, state: 'open' } }), { status: 200 }))
+    })
+    expect(mounted.container.textContent).toContain('Not mergeable right now')
+    expect(mounted.container.textContent).not.toContain('Merge PR #')
+    mounted.unmount()
+    store.dispose()
+  })
+
+  it('persists a chip toggle as a single-key pluginSettings patch', async () => {
+    const { service, ctx } = makeFakeService()
+    const configured: GithubStateResult = {
+      configured: true,
+      ghAvailable: true,
+      allowMerge: false,
+      threads: [thread('1')],
+      pollIntervalSec: 60,
+    }
+    const store = createGithubInboxStore({ githubState: vi.fn().mockResolvedValue(configured) }, service)
+    await store.refresh()
+    const settingsCalls: unknown[] = []
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input)
+      if (url.includes('/sidebar/api/settings.update')) {
+        settingsCalls.push(JSON.parse(String(init?.body)))
+        return new Response(JSON.stringify({ ok: true, value: { value: {}, revision: 0 } }), { status: 200 })
+      }
+      return new Response(JSON.stringify({ ok: true, value: { thread: configured.threads[0] } }), { status: 200 })
+    }))
+    const mounted = mount(createElement(InboxView, { store, ctx, scope: { sessionId: 's1' } }))
+    const ciChip = [...mounted.container.querySelectorAll('button')].find(button => button.textContent === 'CI status')
+    act(() => { ciChip!.click() })
+    await act(async () => {})
+    expect(settingsCalls).toHaveLength(1)
+    expect(settingsCalls[0]).toEqual({ patch: { pluginSettings: { github: { showCi: true } } } })
+    mounted.unmount()
+    store.dispose()
+  })
+
   it('ignores a stale mergeStatus settle after switching threads', async () => {
     const { service, ctx } = makeFakeService()
     const configured: GithubStateResult = {

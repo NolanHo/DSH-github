@@ -165,6 +165,30 @@ describe('GithubInboxService', () => {
     expect(state.threads.map(thread => thread.id)).toEqual(['2', '1'])
   })
 
+  it('tolerates a null-subject row (one malformed row must not fail the inbox)', async () => {
+    const broken = { id: '9', unread: true, reason: 'subscribed', updated_at: '2024-01-01T00:00:00Z', subject: null, repository: null }
+    const fetchMock = vi.fn().mockResolvedValue(inboxResponse([rawThread('1', 'review_requested', 'PullRequest'), broken as never]))
+    vi.stubGlobal('fetch', fetchMock)
+    const service = makeService()
+    const state = await service.state(false)
+    expect(state.threads).toHaveLength(2)
+    expect(state.threads[1]).toMatchObject({ id: '9', repo: '', url: '', title: '', type: '' })
+  })
+
+  it('keeps an adopted raised poll interval through a transient error', async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(inboxResponse([rawThread('1', 'review_requested', 'PullRequest')]))
+      .mockResolvedValueOnce(new Response(null, { status: 304, headers: { 'last-modified': LAST_MODIFIED, 'x-poll-interval': '120' } }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ message: 'Bad credentials' }), { status: 401 }))
+    vi.stubGlobal('fetch', fetchMock)
+    const service = makeService()
+    await service.state(false)
+    await service.state(true) // 304 → adopts 120
+    const state = await service.state(true) // transient error
+    expect(state.error?.code).toBe('github-auth')
+    expect(state.pollIntervalSec).toBe(120)
+  })
+
   it('keeps the last snapshot and reports github-auth on 401', async () => {
     const fetchMock = vi.fn()
       .mockResolvedValueOnce(inboxResponse([rawThread('1', 'review_requested', 'PullRequest')]))

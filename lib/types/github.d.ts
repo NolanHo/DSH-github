@@ -38,15 +38,15 @@ interface RawNotification {
     unread: boolean;
     reason: string;
     updated_at: string;
-    subject: {
+    subject?: {
         title: string;
         url: string | null;
         latest_comment_url: string | null;
         type: string | null;
-    };
-    repository: {
+    } | null;
+    repository?: {
         full_name: string;
-    };
+    } | null;
 }
 /**
  * The web origin thread links derive from: the explicit deployment
@@ -63,7 +63,11 @@ export declare function webOriginOf(apiBase: string, webBase: string | undefined
  * Falls back to the API URL when the path cannot be mapped.
  */
 export declare function htmlUrlOf(apiUrl: string, repo: string, type: string, webOrigin: string): string;
-/** Fold one raw notification row into the client-visible thread shape. */
+/**
+ * Fold one raw notification row into the client-visible thread shape.
+ * Tolerates null subject/repository fields (a single malformed row must
+ * not fail the whole inbox).
+ */
 export declare function mapThread(raw: RawNotification, webOrigin: string): GithubThread;
 /** Run gh auth token and return the trimmed token, or a typed failure. */
 export declare function execGhToken(): Promise<string>;

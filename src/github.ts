@@ -74,8 +74,8 @@ interface RawNotification {
   unread: boolean
   reason: string
   updated_at: string
-  subject: { title: string; url: string | null; latest_comment_url: string | null; type: string | null }
-  repository: { full_name: string }
+  subject?: { title: string; url: string | null; latest_comment_url: string | null; type: string | null } | null
+  repository?: { full_name: string } | null
 }
 
 /** The web-page path a subject type maps to ('PullRequest' → 'pull', …). */
@@ -121,21 +121,27 @@ export function htmlUrlOf(apiUrl: string, repo: string, type: string, webOrigin:
   }
 }
 
-/** Fold one raw notification row into the client-visible thread shape. */
+/**
+ * Fold one raw notification row into the client-visible thread shape.
+ * Tolerates null subject/repository fields (a single malformed row must
+ * not fail the whole inbox).
+ */
 export function mapThread(raw: RawNotification, webOrigin: string): GithubThread {
-  const url = raw.subject.url ?? ''
+  const subject = raw.subject
+  const repo = raw.repository?.full_name ?? ''
+  const url = subject?.url ?? ''
   return {
     id: raw.id,
     unread: raw.unread,
     reason: raw.reason,
-    repo: raw.repository.full_name,
-    title: raw.subject.title,
+    repo,
+    title: subject?.title ?? '',
     url,
-    htmlUrl: htmlUrlOf(url, raw.repository.full_name, raw.subject.type ?? '', webOrigin),
-    type: raw.subject.type ?? '',
+    htmlUrl: htmlUrlOf(url, repo, subject?.type ?? '', webOrigin),
+    type: subject?.type ?? '',
     updatedAt: raw.updated_at,
-    ...(raw.subject.latest_comment_url !== null && raw.subject.latest_comment_url !== undefined
-      ? { latestCommentUrl: raw.subject.latest_comment_url }
+    ...(subject?.latest_comment_url !== null && subject?.latest_comment_url !== undefined
+      ? { latestCommentUrl: subject.latest_comment_url }
       : {}),
   }
 }
@@ -523,7 +529,10 @@ export class GithubInboxService {
         error: stateErrorOf(error),
         threads: this.cache?.threads ?? [],
         fetchedAt: this.cache !== undefined ? new Date(this.cache.fetchedAt).toISOString() : undefined,
-        pollIntervalSec: this.config.pollFloorSeconds,
+        // Keep the last adopted interval through transient errors — a
+        // raised X-Poll-Interval is GitHub's load signal and must survive
+        // one failed fetch.
+        pollIntervalSec: Math.max(this.config.pollFloorSeconds, this.cache?.pollIntervalSec ?? this.config.pollFloorSeconds),
       }
     }
   }

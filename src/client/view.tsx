@@ -218,13 +218,13 @@ function ThreadRow(props: {
                       </button>
                     ))}
                   </div>
-                  {props.mergeStatus.mergeable === false
-                    ? <div className="dgh-errorLine">{t('githubMergeUnavailable')}</div>
-                    : (
+                  {props.mergeStatus.mergeable === true && props.mergeStatus.state === 'open'
+                    ? (
                       <button className="dgh-mergeConfirm" disabled={props.mergeLoading} onClick={props.onMergeConfirm}>
                         {t('githubMergeConfirm', { repo: thread.repo, pr: pr ?? 0 })}
                       </button>
-                    )}
+                    )
+                    : <div className="dgh-errorLine">{t('githubMergeUnavailable')}</div>}
                 </>
               )}
             </div>
@@ -297,6 +297,7 @@ export function InboxView(props: {
     setDetail(null)
     setDetailFailed(false)
     setDetailLoading(true)
+    mergeForRef.current = null
     setMergeFor(null)
     setMergeStatus(null)
     setMergeError(null)
@@ -430,7 +431,11 @@ export function InboxView(props: {
     const next = state.settings[key] !== true
     store.setSettings({ [key]: next })
     setActionError(null)
-    void callSidebarSettings({ pluginSettings: { [SETTINGS_KEY]: { ...state.settings, [key]: next } } }).catch(() => {
+    // Persist ONLY the changed key: a full-blob write from a possibly
+    // stale render closure could revert a concurrent gear-popup write on
+    // the next settings resync. The sidebar settings seam deep-merges the
+    // nested patch into the pluginSettings document.
+    void callSidebarSettings({ pluginSettings: { [SETTINGS_KEY]: { [key]: next } } }).catch(() => {
       setActionError(t('settingsSaveFailed'))
     })
   }
