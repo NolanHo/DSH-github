@@ -304,6 +304,18 @@ export class GithubClient {
       return { notModified: true, threads: [], lastModified: responseLastModified, pollIntervalSec }
     }
     const raw: RawNotification[] = []
+    /**
+     * Follow one rel="next" target only when it shares the API base's
+     * origin — the paginated requests carry the bearer token, and a
+     * mismatched origin (misconfigured proxy, compromised intermediary)
+     * must never receive it (mirrors get()'s absolute-URL guard).
+     */
+    const followNext = (url: string): string => {
+      if (new URL(url).origin !== new URL(this.base).origin) {
+        throw new GithubApiError(502, 'refusing cross-origin GitHub pagination link')
+      }
+      return url
+    }
     const adoptPage = async (response: Response): Promise<void> => {
       const text = await response.text().catch(() => '')
       if (!response.ok) {
@@ -322,7 +334,7 @@ export class GithubClient {
     let next = nextPageUrl(first.headers)
     let pages = 1
     while (next !== null && pages < GITHUB_MAX_PAGES) {
-      const response = await fetch(next, { headers: this.headers() })
+      const response = await fetch(followNext(next), { headers: this.headers() })
       await adoptPage(response)
       next = nextPageUrl(response.headers)
       pages += 1

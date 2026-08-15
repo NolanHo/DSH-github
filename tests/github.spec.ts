@@ -131,6 +131,23 @@ describe('GithubInboxService', () => {
     expect((secondCall[1] as { headers: Record<string, string> }).headers['if-modified-since']).toBe(LAST_MODIFIED)
   })
 
+  it('refuses a cross-origin pagination link (token never leaves the API origin)', async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify([rawThread('1', 'review_requested', 'PullRequest')]), {
+        status: 200,
+        headers: { 'last-modified': LAST_MODIFIED, 'x-poll-interval': '60', link: '<https://attacker.example/collect>; rel="next"' },
+      }))
+    vi.stubGlobal('fetch', fetchMock)
+    const service = makeService()
+    // state() surfaces failures in the result (keeping the last snapshot
+    // contract) rather than rejecting — assert the error code there.
+    const state = await service.state(false)
+    expect(state.error?.code).toBe('github-error')
+    expect(state.threads).toEqual([])
+    // The attacker URL must never be fetched.
+    expect(fetchMock.mock.calls.every(call => !String(call[0]).includes('attacker.example'))).toBe(true)
+  })
+
   it('walks inbox pages via the Link header and merges them newest-first', async () => {
     const fetchMock = vi.fn()
       .mockResolvedValueOnce(new Response(JSON.stringify([rawThread('1', 'review_requested', 'PullRequest')]), {

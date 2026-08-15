@@ -42,6 +42,7 @@
   "files": [
     "lib/index.js",
     "lib/client.js",
+    "lib/shared.js",
     "lib/types/**/*.d.ts",
     "src",
     "cordis.patch.yml",

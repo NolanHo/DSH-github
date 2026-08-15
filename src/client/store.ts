@@ -192,13 +192,18 @@ export function createGithubInboxStore(
       if (!disposed && timer === null) timer = setTimeout(tick, 0)
     },
     refresh: async () => {
-      // Respect the overlap guard like the timer does: wait out an
-      // in-flight poll, then force past the host freshness window. A
-      // mutation during the wait discards this fetch's stale result.
+      // Share the overlap guard with the timer: wait out an in-flight
+      // poll, then OWN the slot for the forced fetch so a concurrent tick
+      // cannot start a redundant non-force poll mid-refresh. A mutation
+      // during the wait discards this fetch's stale result; failures
+      // propagate to the caller (the view shows the action error).
       if (inFlight !== null) await inFlight
       const startedAt = version
-      const snapshot = await apiFace.githubState(true)
-      if (version === startedAt) adopt(snapshot)
+      const run = apiFace.githubState(true).then(snapshot => {
+        if (version === startedAt) adopt(snapshot)
+      })
+      inFlight = run.then(() => undefined, () => undefined).finally(() => { inFlight = null })
+      await run
     },
     removeLocal: (id) => {
       const snapshot = state.snapshot
