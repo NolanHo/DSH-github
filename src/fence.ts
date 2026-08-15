@@ -5,14 +5,12 @@
  * cross-site defense, not authentication. Standalone implementation — the
  * plugin must not depend on another plugin's internals.
  */
-import type { IncomingHttpHeaders } from 'node:http'
-
 /** The request facts the fence reads (structural subset of IncomingMessage). */
 export interface ApiTrustRequest {
-  headers: IncomingHttpHeaders
+  headers: Record<string, string | string[] | undefined>
 }
 
-function header(headers: IncomingHttpHeaders, name: string): string | undefined {
+function header(headers: Record<string, string | string[] | undefined>, name: string): string | undefined {
   const value = headers[name]
   return typeof value === 'string' ? value : undefined
 }

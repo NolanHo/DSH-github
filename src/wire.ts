@@ -4,8 +4,7 @@
  * {ok: true, value} on success and {ok: false, error: {code, message}}
  * (HTTP 4xx/5xx matching the code) on failure.
  */
-import type { IncomingMessage, ServerResponse } from 'node:http'
-
+import type { ApiResponse } from './shims.d.ts'
 import type { GithubWireErrorCode } from './shared.ts'
 
 /** One API failure with its wire code and HTTP status. */
@@ -22,8 +21,10 @@ export class GithubError extends Error {
 /** Body size bound of one JSON request (defense against unbounded reads). */
 const MAX_BODY_BYTES = 1 << 20
 
-/** Structural request face the routes read (node http IncomingMessage fits). */
-export type GithubApiRequest = Pick<IncomingMessage, 'headers'> & AsyncIterable<string | Uint8Array>
+/** The request face readJsonBody consumes (structural; node's IncomingMessage fits). */
+export interface GithubApiRequest {
+  [Symbol.asyncIterator](): AsyncIterator<string | Uint8Array>
+}
 
 /** Read and parse the JSON request body (bounded; malformed → bad-request). */
 export async function readJsonBody(req: GithubApiRequest): Promise<unknown> {
@@ -48,19 +49,19 @@ export async function readJsonBody(req: GithubApiRequest): Promise<unknown> {
 }
 
 /** Write a JSON response with the given status. */
-export function writeJson(res: ServerResponse, status: number, body: unknown): void {
+export function writeJson(res: ApiResponse, status: number, body: unknown): void {
   const payload = JSON.stringify(body)
   res.writeHead(status, { 'content-type': 'application/json; charset=utf-8' })
   res.end(payload)
 }
 
 /** Write the success envelope. */
-export function writeOk(res: ServerResponse, value: unknown): void {
+export function writeOk(res: ApiResponse, value: unknown): void {
   writeJson(res, 200, { ok: true, value })
 }
 
 /** Write the failure envelope for any thrown value (unknown → internal 500). */
-export function writeError(res: ServerResponse, error: unknown): void {
+export function writeError(res: ApiResponse, error: unknown): void {
   if (error instanceof GithubError) {
     writeJson(res, error.status, { ok: false, error: { code: error.code, message: error.message } })
     return
