@@ -1,0 +1,5 @@
+# dsh-github bundle patch: the plugin's own host row, inserted into the
+# profile's plugin stack when the profile bundles this package.
+- insert:
+    - id: github
+      name: 'dsh-github'
