@@ -152,7 +152,11 @@ export function createGithubInboxStore(
 
   const nextDelay = (): number => {
     const snapshot = state.snapshot
-    if (snapshot === null || !snapshot.configured) return UNCONFIGURED_RETRY_MS
+    // A null snapshot means the FIRST poll has not settled yet — retry at
+    // the configured cadence, not at the unconfigured 5-minute probe
+    // (which only applies once we KNOW the inbox is unconfigured).
+    if (snapshot === null) return state.settings.pollSeconds * 1000
+    if (!snapshot.configured) return UNCONFIGURED_RETRY_MS
     return Math.max(state.settings.pollSeconds, snapshot.pollIntervalSec) * 1000
   }
 

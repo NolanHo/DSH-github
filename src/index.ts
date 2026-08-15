@@ -13,7 +13,7 @@ import type { Context } from 'cordis'
 
 import { resolveGithubConfig, type GithubConfig } from './config.ts'
 import { GithubInboxService } from './github.ts'
-import { buildGithubApi, type GithubRoutes } from './routes.ts'
+import { apiMethod, buildGithubApi, type GithubRoutes } from './routes.ts'
 import { isTrustedApiRequest } from './fence.ts'
 import { GithubError, readJsonBody, writeError, writeJson, writeOk } from './wire.ts'
 
@@ -66,7 +66,7 @@ export function apply(ctx: Context, config?: GithubConfig): void {
         }
         try {
           const payload = await readJsonBody(req)
-          const handler = (api as unknown as Record<string, (payload: unknown) => unknown>)[method]
+          const handler = apiMethod(api, method)
           if (handler === undefined) {
             throw new GithubError('not-found', 'unknown dsh-github API method ' + JSON.stringify(method), 404)
           }

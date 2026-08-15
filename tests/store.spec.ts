@@ -112,6 +112,27 @@ describe('GithubInboxStore poll/mutation interplay', () => {
   })
 })
 
+describe('GithubInboxStore poll cadence', () => {
+  it('schedules the first follow-up at the configured cadence, not the 5-minute unconfigured probe', async () => {
+    vi.useFakeTimers()
+    try {
+      const { service } = makeFakeService()
+      const apiState = vi.fn().mockResolvedValue(snapshotOf([thread('1')]))
+      const store = createGithubInboxStore({ githubState: apiState }, service)
+      store.ensurePolling()
+      // First tick fires immediately; its fetch settles with a configured
+      // snapshot, so the follow-up must be pollSeconds (60s), not 5 minutes.
+      await vi.advanceTimersByTimeAsync(0)
+      expect(apiState).toHaveBeenCalledTimes(1)
+      await vi.advanceTimersByTimeAsync(60_000)
+      expect(apiState).toHaveBeenCalledTimes(2)
+      store.dispose()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+})
+
 describe('GithubInboxStore settings sync', () => {
   it('re-reads pluginSettings when the sidebar prefs change (gear popup writes)', () => {
     const initial: GithubPluginSettings = { showReviewRequested: true, showPrActivity: true, showComments: true, showCi: false, showOther: true, pollSeconds: 60 }

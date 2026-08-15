@@ -202,6 +202,27 @@ describe('GithubInboxService', () => {
     expect(state.threads).toEqual([])
   })
 
+  it('picks up a token set in the environment during a cached failure window', async () => {
+    vi.stubEnv('GITHUB_TOKEN', '')
+    vi.stubEnv('GH_TOKEN', '')
+    const fetchMock = vi.fn().mockResolvedValue(inboxResponse([rawThread('1', 'review_requested', 'PullRequest')]))
+    vi.stubGlobal('fetch', fetchMock)
+    const service = new GithubInboxService({
+      apiBase: GITHUB_API_BASE_DEFAULT,
+      pollFloorSeconds: GITHUB_POLL_FLOOR_MIN,
+      perPage: GITHUB_PER_PAGE_MAX,
+      allowMerge: false,
+    }, async () => { throw new Error('not logged into any hosts') })
+    const first = await service.state(false)
+    expect(first.configured).toBe(false)
+    // Set the env token within the 30s failure cache — the next resolve
+    // must adopt it immediately instead of waiting out the TTL.
+    vi.stubEnv('GH_TOKEN', 'env-tok')
+    const second = await service.state(false)
+    expect(second.configured).toBe(true)
+    expect(second.threads).toHaveLength(1)
+  })
+
   it('reports unconfigured with ghAvailable=true when gh is installed but logged out', async () => {
     vi.stubEnv('GITHUB_TOKEN', '')
     vi.stubEnv('GH_TOKEN', '')

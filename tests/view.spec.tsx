@@ -158,6 +158,45 @@ describe('InboxView detail race and gating', () => {
     store.dispose()
   })
 
+  it('ignores a stale mergeStatus settle after switching threads', async () => {
+    const { service, ctx } = makeFakeService()
+    const configured: GithubStateResult = {
+      configured: true,
+      ghAvailable: true,
+      allowMerge: true,
+      threads: [thread('1'), thread('2')],
+      pollIntervalSec: 60,
+    }
+    const store = createGithubInboxStore({ githubState: vi.fn().mockResolvedValue(configured) }, service)
+    await store.refresh()
+    const pending: ((value: Response) => void)[] = []
+    vi.stubGlobal('fetch', vi.fn(() => new Promise<Response>(resolve => { pending.push(resolve) })))
+    const mounted = mount(createElement(InboxView, { store, ctx, scope: { sessionId: 's1' } }))
+    const rows = [...mounted.container.querySelectorAll('button')].filter(button => button.textContent?.includes('PR title needs review'))
+    // Expand t1 and open its merge panel; then switch to t2 and open its own.
+    await act(async () => { rows[0]!.click() })
+    await act(async () => {})
+    const mergeButtons = [...mounted.container.querySelectorAll('button')].filter(button => button.textContent === 'Merge')
+    expect(mergeButtons).toHaveLength(1)
+    await act(async () => { mergeButtons[0]!.click() })
+    await act(async () => { rows[1]!.click() })
+    await act(async () => {})
+    const mergeButtons2 = [...mounted.container.querySelectorAll('button')].filter(button => button.textContent === 'Merge')
+    await act(async () => { mergeButtons2[0]!.click() })
+    expect(pending).toHaveLength(4) // t1 detail + t1 merge + t2 detail + t2 merge
+    // t2's merge settles first with ITS checks; then t1's stale settle arrives.
+    await act(async () => {
+      pending[3]!(new Response(JSON.stringify({ ok: true, value: { checks: [{ name: 't2-check', status: 'completed', conclusion: 'success' }], mergeable: true, state: 'open' } }), { status: 200 }))
+    })
+    await act(async () => {
+      pending[1]!(new Response(JSON.stringify({ ok: true, value: { checks: [{ name: 't1-check-STALE', status: 'completed', conclusion: 'failure' }], mergeable: false, state: 'open' } }), { status: 200 }))
+    })
+    expect(mounted.container.textContent).toContain('t2-check')
+    expect(mounted.container.textContent).not.toContain('t1-check-STALE')
+    mounted.unmount()
+    store.dispose()
+  })
+
   it('hides the comment box on threads without an issue/PR number and Merge when gated', async () => {
     const { service, ctx } = makeFakeService()
     const commitThread = thread('c1', 'Commit', 'https://api.example.test/repos/o/r/commits/abc123', '')

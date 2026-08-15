@@ -27,6 +27,20 @@ const REVIEW_EVENTS = new Set(['APPROVE', 'REQUEST_CHANGES', 'COMMENT'])
 /** Merge methods the GitHub merge endpoint accepts. */
 const MERGE_METHODS = new Set(['merge', 'squash', 'rebase'])
 
+/**
+ * Resolve one API method by name with an own-property check, so Object
+ * prototype members (constructor / toString / __proto__ …) can never
+ * bypass the unknown-method contract.
+ * @param api - the route group.
+ * @param method - the request's method name.
+ * @returns the dispatchable handler, or undefined for unknown names.
+ */
+export function apiMethod(api: GithubRoutes, method: string): ((payload: unknown) => unknown) | undefined {
+  return Object.prototype.hasOwnProperty.call(api, method)
+    ? (api as unknown as Record<string, (payload: unknown) => unknown>)[method]
+    : undefined
+}
+
 /** The GitHub routes of the plugin API. */
 export interface GithubRoutes {
   /** The inbox snapshot (conditional fetch behind the freshness window; force bypasses it). */

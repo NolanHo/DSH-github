@@ -5,7 +5,7 @@
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { buildGithubApi } from '../src/routes.ts'
+import { apiMethod, buildGithubApi } from '../src/routes.ts'
 import { GithubInboxService, GhMissingError } from '../src/github.ts'
 import { GithubError } from '../src/wire.ts'
 import {
@@ -68,6 +68,15 @@ describe('github routes', () => {
     const routes = buildGithubApi(service)
     await expect(routes.markRead({ id: '1' })).rejects.toMatchObject({ code: 'github-unavailable' })
     await expect(routes.merge({ repo: 'o/r', pr: 1, method: 'squash' })).rejects.toMatchObject({ code: 'github-unavailable' })
+  })
+
+  it('resolves methods with an own-property check (prototype members never dispatch)', () => {
+    const routes = buildGithubApi(makeService())
+    expect(apiMethod(routes, 'state')).toBeDefined()
+    expect(apiMethod(routes, 'constructor')).toBeUndefined()
+    expect(apiMethod(routes, 'toString')).toBeUndefined()
+    expect(apiMethod(routes, 'hasOwnProperty')).toBeUndefined()
+    expect(apiMethod(routes, 'nope')).toBeUndefined()
   })
 
   it('maps a GitHub 422 rejection onto the github-rejected wire code', async () => {

@@ -82,6 +82,24 @@ const client: UserConfig = {
   },
 }
 
+// The ./shared subpath exports runtime constants (poll bounds) — it must
+// ship as a real ESM artifact, not just its declaration file.
+const shared: UserConfig = {
+  entry: { shared: 'src/shared.ts' },
+  outDir: 'lib',
+  format: 'esm',
+  platform: 'node',
+  dts: false,
+  sourcemap: false,
+  clean: false,
+  external: [/^node:/],
+  define,
+  outputOptions: {
+    entryFileNames: 'shared.js',
+    codeSplitting: false,
+  },
+}
+
 const host: UserConfig = {
   entry: { index: 'src/index.ts' },
   outDir: 'lib',
@@ -98,4 +116,4 @@ const host: UserConfig = {
   },
 }
 
-export default [host, client]
+export default [host, shared, client]

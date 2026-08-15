@@ -150,7 +150,7 @@ function ThreadRow(props: {
             {props.detailFailed && <span>{t('githubDetailLoadFailed')}</span>}
             {!props.detailLoading && !props.detailFailed && (
               props.detail !== null && props.detail.commentBody !== undefined && props.detail.commentBody !== ''
-                ? <MarkdownText text={props.detail.commentBody} codeLabels={{ copyLabel: 'Copy', copiedLabel: 'Copied' }} />
+                ? <MarkdownText text={props.detail.commentBody} codeLabels={{ copyLabel: t('copy'), copiedLabel: t('copied') }} />
                 : <span>{t('githubNoComment')}</span>
             )}
           </div>
@@ -259,6 +259,9 @@ export function InboxView(props: {
   // detail fetch can discard its result when the user already switched
   // threads (or collapsed) before the response settled.
   const expandedRef = useRef<string | null>(null)
+  // Same guard for the merge panel: a slow mergeStatus fetch must not
+  // overwrite another thread's panel when the user switched mid-flight.
+  const mergeForRef = useRef<string | null>(null)
 
   useEffect(() => { store.ensurePolling() }, [store])
 
@@ -269,6 +272,7 @@ export function InboxView(props: {
 
   const collapse = (): void => {
     expandedRef.current = null
+    mergeForRef.current = null
     setExpanded(null)
     setDetail(null)
     setDetailLoading(false)
@@ -385,14 +389,23 @@ export function InboxView(props: {
   const openMerge = (thread: GithubThread): void => {
     const pr = threadNumber(thread.url)
     if (pr === undefined) return
+    mergeForRef.current = thread.id
     setMergeFor(thread.id)
     setMergeStatus(null)
     setMergeError(null)
     setMergeLoading(true)
     void api.githubMergeStatus(thread.repo, pr)
-      .then(result => { setMergeStatus(result) })
-      .catch(error => { setMergeError(mergeMessage(error)) })
-      .finally(() => { setMergeLoading(false) })
+      .then(result => {
+        // A settle for a panel the user already left must not overwrite
+        // the current thread's merge gate info.
+        if (mergeForRef.current === thread.id) setMergeStatus(result)
+      })
+      .catch(error => {
+        if (mergeForRef.current === thread.id) setMergeError(mergeMessage(error))
+      })
+      .finally(() => {
+        if (mergeForRef.current === thread.id) setMergeLoading(false)
+      })
   }
 
   const confirmMerge = async (thread: GithubThread): Promise<void> => {

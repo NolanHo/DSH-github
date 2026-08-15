@@ -157,6 +157,19 @@ export function execGhToken(): Promise<string> {
   })
 }
 
+/**
+ * The token the deployment environment provides: GITHUB_TOKEN first, then
+ * GH_TOKEN. Empty strings count as absent — an empty GITHUB_TOKEN must not
+ * shadow a valid GH_TOKEN.
+ */
+export function envToken(): string | undefined {
+  const github = process.env.GITHUB_TOKEN
+  if (github !== undefined && github !== '') return github
+  const gh = process.env.GH_TOKEN
+  if (gh !== undefined && gh !== '') return gh
+  return undefined
+}
+
 /** Probes the gh CLI login; injectable for tests. */
 export type GhTokenProbe = () => Promise<string>
 
@@ -421,7 +434,16 @@ export class GithubInboxService {
     const now = Date.now()
     const cached = this.tokenCache
     if (cached !== undefined && now - cached.at < (cached.token !== undefined ? TOKEN_SUCCESS_TTL_MS : TOKEN_FAILURE_TTL_MS)) {
-      return { token: cached.token, ghAvailable: this.ghAvailable() }
+      if (cached.token !== undefined) return { token: cached.token, ghAvailable: this.ghAvailable() }
+      // A cached FAILURE throttles the gh probe, but the environment may
+      // have gained a token since — re-read it on every call (cheap), so
+      // setting GH_TOKEN takes effect immediately.
+      const env = envToken()
+      if (env !== undefined) {
+        this.tokenCache = { token: env, at: now }
+        return { token: env, ghAvailable: this.ghAvailable() }
+      }
+      return { token: undefined, ghAvailable: this.ghAvailable() }
     }
     let ghToken: string | undefined
     if (!this.ghMissing) {
@@ -434,8 +456,8 @@ export class GithubInboxService {
         ghToken = undefined
       }
     }
-    const env = process.env.GITHUB_TOKEN ?? process.env.GH_TOKEN
-    const token = ghToken !== undefined ? ghToken : (env !== undefined && env !== '' ? env : undefined)
+    const env = envToken()
+    const token = ghToken !== undefined ? ghToken : env
     this.tokenCache = { token, at: now }
     return { token, ghAvailable: this.ghAvailable() }
   }
