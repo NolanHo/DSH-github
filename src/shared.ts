@@ -1,7 +1,7 @@
 /**
  * Wire vocabulary shared by the node half and the browser half. Node-free
  * by contract: the client bundle inlines this module.
- * @module dsh-github/shared
+ * @module dsh-github-inbox/shared
  */
 
 /** The client-visible wire shape of one inbox thread. */

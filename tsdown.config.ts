@@ -75,7 +75,7 @@ const client: UserConfig = {
   plugins: [purityGate],
   outputOptions: {
     entryFileNames: 'client.js',
-    banner: 'window.__ModuleLoader__.load({ id: "dsh-github", factory: (require) => {',
+    banner: 'window.__ModuleLoader__.load({ id: "dsh-github-inbox", factory: (require) => {',
     footer: 'return module.exports; } });',
     intro: 'var module = { exports: {} }; var exports = module.exports;',
     codeSplitting: false,

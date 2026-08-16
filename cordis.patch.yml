@@ -2,4 +2,4 @@
 # profile's plugin stack when the profile bundles this package.
 - insert:
     - id: github
-      name: 'dsh-github'
+      name: 'dsh-github-inbox'

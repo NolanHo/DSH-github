@@ -3,7 +3,7 @@
  * fill in). The Loader normally validates cordis config against exported
  * schemas; this standalone resolver applies the same defaults for direct
  * callers and fails loud on wrong-typed values.
- * @module dsh-github/config
+ * @module dsh-github-inbox/config
  */
 /** Default GitHub REST base (override for GHES deployments). */
 export declare const GITHUB_API_BASE_DEFAULT = "https://api.github.com";

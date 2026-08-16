@@ -1,5 +1,5 @@
 {
-  "name": "dsh-github",
+  "name": "dsh-github-inbox",
   "version": "0.1.2",
   "description": "DSH plugin: GitHub inbox & PR workflow as a better-sidebar tab (unread badge, category filters, review actions, gated merge).",
   "type": "module",

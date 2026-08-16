@@ -14,9 +14,9 @@ import { type GithubConfig } from './config.ts';
 export type { GithubConfig };
 export type { GithubCheck, GithubMergeMethod, GithubMergeStatus, GithubReviewEvent, GithubStateResult, GithubThread, GithubThreadDetail, GithubPluginSettings, } from './shared.ts';
 /** Plugin identity for cordis rows. */
-export declare const name = "dsh-github";
+export declare const name = "dsh-github-inbox";
 /** The route prefix the client half posts to. */
-export declare const API_PREFIX = "/plugins/dsh-github/api";
+export declare const API_PREFIX = "/plugins/dsh-github-inbox/api";
 /**
  * Plugin body.
  * @param ctx - the host cordis context (webServer/webRuntime injected dynamically).

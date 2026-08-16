@@ -1,4 +1,4 @@
-# dsh-github 插件仓库约束
+# dsh-github-inbox 插件仓库约束
 
 ## 硬约束
 

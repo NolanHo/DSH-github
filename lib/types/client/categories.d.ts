@@ -1,7 +1,7 @@
 /**
  * Pure classification / filter / grouping functions over the inbox wire
  * shapes (node-free, unit-testable).
- * @module dsh-github/client/categories
+ * @module dsh-github-inbox/client/categories
  */
 import { type GithubPluginSettings, type GithubThread } from '../shared.ts';
 /** The five inbox categories the user can filter with checkboxes. */

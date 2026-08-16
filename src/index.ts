@@ -30,10 +30,10 @@ export type {
 } from './shared.ts'
 
 /** Plugin identity for cordis rows. */
-export const name = 'dsh-github'
+export const name = 'dsh-github-inbox'
 
 /** The route prefix the client half posts to. */
-export const API_PREFIX = '/plugins/dsh-github/api'
+export const API_PREFIX = '/plugins/dsh-github-inbox/api'
 
 /**
  * Plugin body.

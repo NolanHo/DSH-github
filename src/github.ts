@@ -9,7 +9,7 @@
  * configuration, the local gh CLI login, or the GITHUB_TOKEN / GH_TOKEN
  * environment, in that order. The feature degrades to an unconfigured
  * guide when no source yields a token.
- * @module dsh-github/github
+ * @module dsh-github-inbox/github
  */
 
 import { execFile } from 'node:child_process'
@@ -231,7 +231,7 @@ export class GithubClient {
     return {
       accept: 'application/vnd.github+json',
       'x-github-api-version': GITHUB_API_VERSION,
-      'user-agent': 'dsh-github',
+      'user-agent': 'dsh-github-inbox',
       authorization: `Bearer ${this.token}`,
       'content-type': 'application/json',
       ...extra,

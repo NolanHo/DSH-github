@@ -1,7 +1,7 @@
 /**
  * Pure classification / filter / grouping functions over the inbox wire
  * shapes (node-free, unit-testable).
- * @module dsh-github/client/categories
+ * @module dsh-github-inbox/client/categories
  */
 import { GITHUB_POLL_SECONDS_DEFAULT, GITHUB_POLL_SECONDS_MAX, GITHUB_POLL_SECONDS_MIN, type GithubPluginSettings, type GithubThread } from '../shared.ts'
 

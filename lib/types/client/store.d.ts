@@ -7,7 +7,7 @@
  * settings' pollSeconds floored by the host's effective poll interval,
  * skips while the document is hidden, and slows to a 5-minute probe
  * while the inbox is unconfigured.
- * @module dsh-github/client/store
+ * @module dsh-github-inbox/client/store
  */
 import type { BetterSidebarService } from 'dsh-better-sidebar/client/service';
 import type { GithubPluginSettings, GithubStateResult } from '../shared.ts';

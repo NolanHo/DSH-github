@@ -9,7 +9,7 @@
  * configuration, the local gh CLI login, or the GITHUB_TOKEN / GH_TOKEN
  * environment, in that order. The feature degrades to an unconfigured
  * guide when no source yields a token.
- * @module dsh-github/github
+ * @module dsh-github-inbox/github
  */
 import { type ResolvedGithubConfig } from './config.ts';
 import type { GithubMergeStatus, GithubStateResult, GithubThread } from './shared.ts';
