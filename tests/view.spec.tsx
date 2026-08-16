@@ -109,12 +109,12 @@ describe('InboxView render smoke', () => {
     const buttons = [...mounted.container.querySelectorAll('button')]
     const ciChip = buttons.find(button => button.textContent === 'CI status')
     expect(ciChip).toBeDefined()
-    act(() => { ciChip!.click() })
+    act(() => { (ciChip as HTMLElement).click() })
     expect(store.getState().settings.showCi).toBe(true)
     // Expanding the row fetches the thread detail (stubbed at fetch level).
-    const row = buttons.find(button => button.textContent?.includes('PR title needs review'))
+    const row = [...mounted.container.querySelectorAll('[role="button"]')].find(el => el.textContent?.includes('PR title needs review'))
     expect(row).toBeDefined()
-    await act(async () => { row!.click() })
+    await act(async () => { (row as HTMLElement).click() })
     await act(async () => {})
     expect(mounted.container.textContent).toContain('hello from comment')
     expect(mounted.container.textContent).toContain('Approve')
@@ -139,11 +139,11 @@ describe('InboxView detail race and gating', () => {
     const pending: ((value: Response) => void)[] = []
     vi.stubGlobal('fetch', vi.fn(() => new Promise<Response>(resolve => { pending.push(resolve) })))
     const mounted = mount(createElement(InboxView, { store, ctx, scope: { sessionId: 's1' } }))
-    const rows = [...mounted.container.querySelectorAll('button')].filter(button => button.textContent?.includes('PR title needs review'))
+    const rows = [...mounted.container.querySelectorAll('[role="button"]')].filter(el => el.textContent?.includes('PR title needs review'))
     expect(rows).toHaveLength(2)
     // Expand t1, then t2; both detail fetches are pending.
-    await act(async () => { rows[0]!.click() })
-    await act(async () => { rows[1]!.click() })
+    await act(async () => { (rows[0] as HTMLElement).click() })
+    await act(async () => { (rows[1] as HTMLElement).click() })
     expect(pending).toHaveLength(2)
     // t2's fetch settles first with ITS body; then t1's stale settle arrives.
     await act(async () => {
@@ -172,11 +172,11 @@ describe('InboxView detail race and gating', () => {
     const pending: ((value: Response) => void)[] = []
     vi.stubGlobal('fetch', vi.fn(() => new Promise<Response>(resolve => { pending.push(resolve) })))
     const mounted = mount(createElement(InboxView, { store, ctx, scope: { sessionId: 's1' } }))
-    const rows = [...mounted.container.querySelectorAll('button')].filter(button => button.textContent?.includes('PR title needs review'))
-    await act(async () => { rows[0]!.click() })
+    const rows = [...mounted.container.querySelectorAll('[role="button"]')].filter(el => el.textContent?.includes('PR title needs review'))
+    await act(async () => { (rows[0] as HTMLElement).click() })
     await act(async () => {})
     const mergeButton = [...mounted.container.querySelectorAll('button')].find(button => button.textContent === 'Merge')
-    await act(async () => { mergeButton!.click() })
+    await act(async () => { (mergeButton as HTMLElement).click() })
     // mergeable: null → no confirm button, unavailable line instead.
     await act(async () => {
       pending[1]!(new Response(JSON.stringify({ ok: true, value: { checks: [], mergeable: null, state: 'open' } }), { status: 200 }))
@@ -209,7 +209,7 @@ describe('InboxView detail race and gating', () => {
     }))
     const mounted = mount(createElement(InboxView, { store, ctx, scope: { sessionId: 's1' } }))
     const ciChip = [...mounted.container.querySelectorAll('button')].find(button => button.textContent === 'CI status')
-    act(() => { ciChip!.click() })
+    act(() => { (ciChip as HTMLElement).click() })
     await act(async () => {})
     expect(settingsCalls).toHaveLength(1)
     expect(settingsCalls[0]).toEqual({ patch: { pluginSettings: { github: { showCi: true } } } })
@@ -231,17 +231,17 @@ describe('InboxView detail race and gating', () => {
     const pending: ((value: Response) => void)[] = []
     vi.stubGlobal('fetch', vi.fn(() => new Promise<Response>(resolve => { pending.push(resolve) })))
     const mounted = mount(createElement(InboxView, { store, ctx, scope: { sessionId: 's1' } }))
-    const rows = [...mounted.container.querySelectorAll('button')].filter(button => button.textContent?.includes('PR title needs review'))
+    const rows = [...mounted.container.querySelectorAll('[role="button"]')].filter(el => el.textContent?.includes('PR title needs review'))
     // Expand t1 and open its merge panel; then switch to t2 and open its own.
-    await act(async () => { rows[0]!.click() })
+    await act(async () => { (rows[0] as HTMLElement).click() })
     await act(async () => {})
     const mergeButtons = [...mounted.container.querySelectorAll('button')].filter(button => button.textContent === 'Merge')
     expect(mergeButtons).toHaveLength(1)
-    await act(async () => { mergeButtons[0]!.click() })
-    await act(async () => { rows[1]!.click() })
+    await act(async () => { (mergeButtons[0] as HTMLElement).click() })
+    await act(async () => { (rows[1] as HTMLElement).click() })
     await act(async () => {})
     const mergeButtons2 = [...mounted.container.querySelectorAll('button')].filter(button => button.textContent === 'Merge')
-    await act(async () => { mergeButtons2[0]!.click() })
+    await act(async () => { (mergeButtons2[0] as HTMLElement).click() })
     expect(pending).toHaveLength(4) // t1 detail + t1 merge + t2 detail + t2 merge
     // t2's merge settles first with ITS checks; then t1's stale settle arrives.
     await act(async () => {
@@ -270,8 +270,8 @@ describe('InboxView detail race and gating', () => {
     await store.refresh()
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({ ok: true, value: { thread: commitThread } }), { status: 200 })))
     const mounted = mount(createElement(InboxView, { store, ctx, scope: { sessionId: 's1' } }))
-    const row = [...mounted.container.querySelectorAll('button')].find(button => button.textContent?.includes('PR title needs review'))
-    await act(async () => { row!.click() })
+    const row = [...mounted.container.querySelectorAll('[role="button"]')].find(el => el.textContent?.includes('PR title needs review'))
+    await act(async () => { (row as HTMLElement).click() })
     await act(async () => {})
     expect(mounted.container.textContent).not.toContain('Write a comment')
     expect(mounted.container.textContent).not.toContain('Send')
@@ -282,3 +282,114 @@ describe('InboxView detail race and gating', () => {
     store.dispose()
   })
 })
+
+describe('InboxView new interactions', () => {
+  it('opens the thread in the sidebar browser when the title is clicked (without expanding)', async () => {
+    const { service, ctx } = makeFakeService()
+    const configured: GithubStateResult = { configured: true, ghAvailable: true, allowMerge: false, threads: [thread('1')], pollIntervalSec: 60 }
+    const store = createGithubInboxStore({ githubState: vi.fn().mockResolvedValue(configured) }, service)
+    await store.refresh()
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({ ok: true, value: { thread: configured.threads[0] } }), { status: 200 })))
+    const mounted = mount(createElement(InboxView, { store, ctx, scope: { sessionId: 's1' } }))
+    const title = [...mounted.container.querySelectorAll('[role="link"]')].find(el => el.textContent?.includes('PR title needs review'))
+    await act(async () => { (title as HTMLElement).click() })
+    expect(ctx.betterSidebar.openTab).toHaveBeenCalledWith(expect.objectContaining({ type: 'browser', url: 'https://github.com/o/r/pull/1' }), expect.anything())
+    expect(mounted.container.textContent).not.toContain('Mark read')
+    mounted.unmount()
+    store.dispose()
+  })
+
+  it('freezes the list while a thread is expanded and counts fresh notifications in a banner', async () => {
+    const { service, ctx } = makeFakeService()
+    const first: GithubStateResult = { configured: true, ghAvailable: true, allowMerge: false, threads: [thread('1')], pollIntervalSec: 60 }
+    const apiState = vi.fn().mockResolvedValue(first)
+    const store = createGithubInboxStore({ githubState: apiState }, service)
+    await store.refresh()
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({ ok: true, value: { thread: first.threads[0] } }), { status: 200 })))
+    const mounted = mount(createElement(InboxView, { store, ctx, scope: { sessionId: 's1' } }))
+    const row = [...mounted.container.querySelectorAll('[role="button"]')].find(el => el.textContent?.includes('PR title needs review'))
+    await act(async () => { (row as HTMLElement).click() })
+    await act(async () => {})
+    const second: GithubStateResult = { configured: true, ghAvailable: true, allowMerge: false, threads: [thread('2'), thread('1')], pollIntervalSec: 60 }
+    apiState.mockResolvedValue(second)
+    await act(async () => { await store.refresh() })
+    expect(mounted.container.textContent).toContain('1 new notification')
+    const banner = [...mounted.container.querySelectorAll('button')].find(button => button.textContent?.includes('new notification'))
+    expect(banner).toBeDefined()
+    await act(async () => { (banner as HTMLElement).click() })
+    expect(mounted.container.textContent).not.toContain('new notification')
+    mounted.unmount()
+    store.dispose()
+  })
+
+  it('confirms Done (archive) before firing the request', async () => {
+    const { service, ctx } = makeFakeService()
+    const configured: GithubStateResult = { configured: true, ghAvailable: true, allowMerge: false, threads: [thread('1')], pollIntervalSec: 60 }
+    const store = createGithubInboxStore({ githubState: vi.fn().mockResolvedValue(configured) }, service)
+    await store.refresh()
+    const calls: string[] = []
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
+      calls.push(String(input))
+      return new Response(JSON.stringify({ ok: true, value: {} }), { status: 200 })
+    }))
+    const mounted = mount(createElement(InboxView, { store, ctx, scope: { sessionId: 's1' } }))
+    const row = [...mounted.container.querySelectorAll('[role="button"]')].find(el => el.textContent?.includes('PR title needs review'))
+    await act(async () => { (row as HTMLElement).click() })
+    await act(async () => {})
+    const more = [...mounted.container.querySelectorAll('button')].find(button => button.textContent?.startsWith('More'))
+    await act(async () => { (more as HTMLElement).click() })
+    const doneButton = [...mounted.container.querySelectorAll('button')].find(button => button.textContent === 'Done')
+    await act(async () => { (doneButton as HTMLElement).click() })
+    expect(calls.some(url => url.includes('markDone'))).toBe(false)
+    expect(mounted.container.textContent).toContain('Archive this notification')
+    const confirmButton = mounted.container.querySelector('.dgh-confirm button')
+    await act(async () => { (confirmButton as HTMLElement).click() })
+    await act(async () => {})
+    expect(calls.some(url => url.includes('markDone'))).toBe(true)
+    mounted.unmount()
+    store.dispose()
+  })
+
+  it('supports multi-select bulk mark-as-read', async () => {
+    const { service, ctx } = makeFakeService()
+    const configured: GithubStateResult = { configured: true, ghAvailable: true, allowMerge: false, threads: [thread('1'), thread('2'), thread('3')], pollIntervalSec: 60 }
+    const store = createGithubInboxStore({ githubState: vi.fn().mockResolvedValue(configured) }, service)
+    await store.refresh()
+    const calls: string[] = []
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
+      calls.push(String(input))
+      return new Response(JSON.stringify({ ok: true, value: {} }), { status: 200 })
+    }))
+    const mounted = mount(createElement(InboxView, { store, ctx, scope: { sessionId: 's1' } }))
+    const selectToggle = [...mounted.container.querySelectorAll('button')].find(button => button.title === 'Multi-select')
+    await act(async () => { (selectToggle as HTMLElement).click() })
+    const boxes = [...mounted.container.querySelectorAll('input[type="checkbox"]')]
+    expect(boxes).toHaveLength(3)
+    await act(async () => { (boxes[0] as HTMLElement).click() })
+    await act(async () => { (boxes[1] as HTMLElement).click() })
+    const bulkRead = [...mounted.container.querySelectorAll('button')].find(button => button.textContent === 'Mark read')
+    await act(async () => { (bulkRead as HTMLElement).click() })
+    await act(async () => {})
+    expect(calls.filter(url => url.includes('markRead')).length).toBe(2)
+    expect(mounted.container.textContent).toContain('Marked 2 as read')
+    mounted.unmount()
+    store.dispose()
+  })
+
+  it('disables actions while auth-failed (read-only degradation)', async () => {
+    const { service, ctx } = makeFakeService()
+    const failing: GithubStateResult = { configured: true, ghAvailable: true, allowMerge: false, error: { code: 'github-auth', message: 'Bad credentials' }, threads: [thread('1')], pollIntervalSec: 60 }
+    const store = createGithubInboxStore({ githubState: vi.fn().mockResolvedValue(failing) }, service)
+    await store.refresh()
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({ ok: true, value: { thread: failing.threads[0] } }), { status: 200 })))
+    const mounted = mount(createElement(InboxView, { store, ctx, scope: { sessionId: 's1' } }))
+    const row = [...mounted.container.querySelectorAll('[role="button"]')].find(el => el.textContent?.includes('PR title needs review'))
+    await act(async () => { (row as HTMLElement).click() })
+    await act(async () => {})
+    const approve = [...mounted.container.querySelectorAll('button')].find(button => button.textContent === 'Approve')
+    expect((approve as HTMLButtonElement).disabled).toBe(true)
+    mounted.unmount()
+    store.dispose()
+  })
+})
+

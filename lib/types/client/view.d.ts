@@ -1,15 +1,14 @@
 /**
- * The GitHub inbox view: status line (setup guide / auth warning /
- * stale-snapshot warning), filter chips, a repo-grouped thread list, and
- * the per-thread action surface — mark read / done, open in the sidebar
- * browser or externally, PR review verdicts (approve / request changes),
- * general comments, and the gated merge panel (CI status + method +
- * explicit confirm).
- *
- * The store owns polling; this component only renders its snapshot. Chips
- * write the same pluginSettings['github'] keys the gear popup binds: local
- * optimistic state through the store, persisted through the sidebar's
- * settings route.
+ * The GitHub inbox view. Interaction model:
+ * - the TITLE opens the thread in the sidebar browser; the rest of the row
+ *   expands/collapses the detail panel (chevron included);
+ * - primary actions (Approve / Request changes / Comment / Merge) live in
+ *   the expanded panel with inline confirm bars; read/done/open actions
+ *   fold into a secondary "more" strip;
+ * - multi-select + per-repo "mark all read" for bulk cleanup;
+ * - incoming polls never reflow the list while a thread is expanded — a
+ *   banner counts the fresh items and applies them on demand;
+ * - actions disable while unconfigured or auth-failed (read-only).
  */
 import { type ReactNode } from 'react';
 import type { Context } from 'cordis';
