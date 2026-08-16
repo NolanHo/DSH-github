@@ -23,7 +23,9 @@ export class GithubClientError extends Error {
 async function call<T>(method: string, payload: Record<string, unknown>, signal?: AbortSignal): Promise<T> {
   let response: Response
   try {
-    response = await fetch('/plugins/dsh-github-inbox/api/' + method, {
+    // See API_PREFIX in src/index.ts: the route prefix stays the legacy
+    // /plugins/dsh-github/api so the rename works without a server restart.
+    response = await fetch('/plugins/dsh-github/api/' + method, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(payload),

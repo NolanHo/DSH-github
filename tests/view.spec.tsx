@@ -95,7 +95,7 @@ describe('InboxView render smoke', () => {
     await store.refresh()
     const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input)
-      if (url.includes('/plugins/dsh-github-inbox/api/thread')) {
+      if (url.includes('/plugins/dsh-github/api/thread')) {
         return new Response(JSON.stringify({ ok: true, value: { thread: configured.threads[0], commentBody: '# hello from comment' } }), { status: 200 })
       }
       return new Response(JSON.stringify({ ok: true, value: { value: {}, revision: 0 } }), { status: 200 })
